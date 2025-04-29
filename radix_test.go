@@ -10,16 +10,16 @@ import (
 )
 
 func TestRadix(t *testing.T) {
-	var min, max string
+	var cmin, cmax string
 	inp := make(map[string]interface{})
 	for i := 0; i < 1000; i++ {
 		gen := generateUUID()
 		inp[gen] = i
-		if gen < min || i == 0 {
-			min = gen
+		if gen < cmin || i == 0 {
+			cmin = gen
 		}
-		if gen > max || i == 0 {
-			max = gen
+		if gen > cmax || i == 0 {
+			cmax = gen
 		}
 	}
 
@@ -45,12 +45,12 @@ func TestRadix(t *testing.T) {
 
 	// Check min and max
 	outMin, _, _ := r.Minimum()
-	if outMin != min {
-		t.Fatalf("bad minimum: %v %v", outMin, min)
+	if outMin != cmin {
+		t.Fatalf("bad minimum: %v %v", outMin, cmin)
 	}
 	outMax, _, _ := r.Maximum()
-	if outMax != max {
-		t.Fatalf("bad maximum: %v %v", outMax, max)
+	if outMax != cmax {
+		t.Fatalf("bad maximum: %v %v", outMax, cmax)
 	}
 
 	for k, v := range inp {
@@ -68,7 +68,7 @@ func TestRadix(t *testing.T) {
 }
 
 func TestRoot(t *testing.T) {
-	r := New()
+	r := New[bool]()
 	_, ok := r.Delete("")
 	if ok {
 		t.Fatalf("bad")
@@ -89,7 +89,7 @@ func TestRoot(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 
-	r := New()
+	r := New[bool]()
 
 	s := []string{"", "A", "AB"}
 
@@ -122,7 +122,7 @@ func TestDeletePrefix(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		r := New()
+		r := New[bool]()
 		for _, ss := range test.inp {
 			r.Insert(ss, true)
 		}
@@ -132,8 +132,8 @@ func TestDeletePrefix(t *testing.T) {
 			t.Fatalf("Bad delete, expected %v to be deleted but got %v", test.numDeleted, deleted)
 		}
 
-		out := []string{}
-		fn := func(s string, v interface{}) bool {
+		out := make([]string, 0)
+		fn := func(s string, v bool) bool {
 			out = append(out, s)
 			return false
 		}
@@ -146,7 +146,7 @@ func TestDeletePrefix(t *testing.T) {
 }
 
 func TestLongestPrefix(t *testing.T) {
-	r := New()
+	r := New[bool]()
 
 	keys := []string{
 		"",
@@ -157,7 +157,7 @@ func TestLongestPrefix(t *testing.T) {
 		"foozip",
 	}
 	for _, k := range keys {
-		r.Insert(k, nil)
+		r.Insert(k, true)
 	}
 	if r.Len() != len(keys) {
 		t.Fatalf("bad len: %v %v", r.Len(), len(keys))
@@ -194,7 +194,7 @@ func TestLongestPrefix(t *testing.T) {
 }
 
 func TestWalkPrefix(t *testing.T) {
-	r := New()
+	r := New[bool]()
 
 	keys := []string{
 		"foobar",
@@ -204,7 +204,7 @@ func TestWalkPrefix(t *testing.T) {
 		"zipzap",
 	}
 	for _, k := range keys {
-		r.Insert(k, nil)
+		r.Insert(k, true)
 	}
 	if r.Len() != len(keys) {
 		t.Fatalf("bad len: %v %v", r.Len(), len(keys))
@@ -258,8 +258,8 @@ func TestWalkPrefix(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		out := []string{}
-		fn := func(s string, v interface{}) bool {
+		out := make([]string, 0)
+		fn := func(s string, v bool) bool {
 			out = append(out, s)
 			return false
 		}
@@ -273,7 +273,7 @@ func TestWalkPrefix(t *testing.T) {
 }
 
 func TestWalkPath(t *testing.T) {
-	r := New()
+	r := New[bool]()
 
 	keys := []string{
 		"foo",
@@ -284,7 +284,7 @@ func TestWalkPath(t *testing.T) {
 		"zipzap",
 	}
 	for _, k := range keys {
-		r.Insert(k, nil)
+		r.Insert(k, true)
 	}
 	if r.Len() != len(keys) {
 		t.Fatalf("bad len: %v %v", r.Len(), len(keys))
@@ -330,8 +330,8 @@ func TestWalkPath(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		out := []string{}
-		fn := func(s string, v interface{}) bool {
+		out := make([]string, 0)
+		fn := func(s string, v bool) bool {
 			out = append(out, s)
 			return false
 		}
@@ -345,18 +345,18 @@ func TestWalkPath(t *testing.T) {
 }
 
 func TestWalkDelete(t *testing.T) {
-	r := New()
-	r.Insert("init0/0", nil)
-	r.Insert("init0/1", nil)
-	r.Insert("init0/2", nil)
-	r.Insert("init0/3", nil)
-	r.Insert("init1/0", nil)
-	r.Insert("init1/1", nil)
-	r.Insert("init1/2", nil)
-	r.Insert("init1/3", nil)
-	r.Insert("init2", nil)
+	r := New[bool]()
+	r.Insert("init0/0", true)
+	r.Insert("init0/1", true)
+	r.Insert("init0/2", true)
+	r.Insert("init0/3", true)
+	r.Insert("init1/0", true)
+	r.Insert("init1/1", true)
+	r.Insert("init1/2", true)
+	r.Insert("init1/3", true)
+	r.Insert("init2", true)
 
-	deleteFn := func(s string, v interface{}) bool {
+	deleteFn := func(s string, v bool) bool {
 		r.Delete(s)
 		return false
 	}
@@ -393,16 +393,194 @@ func generateUUID() string {
 		buf[10:16])
 }
 
-func BenchmarkInsert(b *testing.B) {
-	r := New()
-	for i := 0; i < 10000; i++ {
-		r.Insert(fmt.Sprintf("init%d", i), true)
+const (
+	benchmarkTreeSize = 10000
+)
+
+// setupTree creates a tree with n elements for benchmarking
+func setupTree[T any](n int, value T) *Tree[T] {
+	r := New[T]()
+	for i := 0; i < n; i++ {
+		r.Insert(fmt.Sprintf("key%d", i), value)
 	}
+	return r
+}
+
+// generateKeys creates n keys for benchmarking
+func generateKeys(n int) []string {
+	keys := make([]string, n)
+	for i := 0; i < n; i++ {
+		keys[i] = fmt.Sprintf("key%d", i)
+	}
+	return keys
+}
+
+// BenchmarkTree_Insert measures insertion performance
+func BenchmarkTree_Insert(b *testing.B) {
+	r := New[int]()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		_, updated := r.Insert(strconv.Itoa(n), true)
-		if updated {
-			b.Fatal("bad")
-		}
+		r.Insert(strconv.Itoa(n), n)
+	}
+}
+
+// BenchmarkTree_InsertExisting measures performance of inserting existing keys
+func BenchmarkTree_InsertExisting(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+	keys := generateKeys(benchmarkTreeSize)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		idx := n % benchmarkTreeSize
+		r.Insert(keys[idx], 100)
+	}
+}
+
+// BenchmarkTree_Get measures lookup performance
+func BenchmarkTree_Get(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+	keys := generateKeys(benchmarkTreeSize)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		idx := n % benchmarkTreeSize
+		r.Get(keys[idx])
+	}
+}
+
+// BenchmarkTree_GetNonexistent measures lookup performance for missing keys
+func BenchmarkTree_GetNonexistent(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r.Get(fmt.Sprintf("missing%d", n))
+	}
+}
+
+// BenchmarkTree_LongestPrefix measures longest prefix lookup performance
+func BenchmarkTree_LongestPrefix(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		idx := n % benchmarkTreeSize
+		r.LongestPrefix(fmt.Sprintf("key%d-suffix", idx))
+	}
+}
+
+// BenchmarkTree_Delete measures deletion performance
+func BenchmarkTree_Delete(b *testing.B) {
+	b.StopTimer()
+	r := setupTree(b.N, 42)
+	keys := make([]string, b.N)
+	for i := 0; i < b.N; i++ {
+		keys[i] = fmt.Sprintf("key%d", i)
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		r.Delete(keys[i])
+	}
+}
+
+// BenchmarkTree_DeletePrefix measures prefix deletion performance
+func BenchmarkTree_DeletePrefix(b *testing.B) {
+	prefixLen := 100
+	size := prefixLen * b.N
+
+	b.StopTimer()
+	r := New[int]()
+	for i := 0; i < size; i++ {
+		prefix := i / prefixLen
+		r.Insert(fmt.Sprintf("prefix%d-key%d", prefix, i), i)
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		r.DeletePrefix(fmt.Sprintf("prefix%d-", i))
+	}
+}
+
+// BenchmarkTree_Walk measures full tree traversal performance
+func BenchmarkTree_Walk(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		count := 0
+		r.Walk(func(s string, v int) bool {
+			count++
+			return false
+		})
+	}
+}
+
+// BenchmarkTree_WalkPrefix measures prefix walking performance
+func BenchmarkTree_WalkPrefix(b *testing.B) {
+	// Create a tree with key0, key1, ... and also subkey0, subkey1, ...
+	r := New[int]()
+	for i := 0; i < benchmarkTreeSize; i++ {
+		r.Insert(fmt.Sprintf("key%d", i), i)
+		r.Insert(fmt.Sprintf("subkey%d", i), i)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		count := 0
+		prefix := "sub"
+		r.WalkPrefix(prefix, func(s string, v int) bool {
+			count++
+			return false
+		})
+	}
+}
+
+// BenchmarkTree_WalkPath measures path walking performance
+func BenchmarkTree_WalkPath(b *testing.B) {
+	// Create a hierarchical path structure
+	r := New[int]()
+	for i := 0; i < 100; i++ {
+		path := fmt.Sprintf("root/level1-%d/level2-%d/level3-%d", i, i, i)
+		r.Insert(path, i)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		idx := n % 100
+		path := fmt.Sprintf("root/level1-%d/level2-%d/level3-%d", idx, idx, idx)
+		r.WalkPath(path, func(s string, v int) bool {
+			return false
+		})
+	}
+}
+
+// BenchmarkTree_Minimum measures minimum key lookup performance
+func BenchmarkTree_Minimum(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r.Minimum()
+	}
+}
+
+// BenchmarkTree_Maximum measures maximum key lookup performance
+func BenchmarkTree_Maximum(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r.Maximum()
+	}
+}
+
+// BenchmarkTree_ToMap measures the performance of converting to a map
+func BenchmarkTree_ToMap(b *testing.B) {
+	r := setupTree(benchmarkTreeSize, 42)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		r.ToMap()
 	}
 }
